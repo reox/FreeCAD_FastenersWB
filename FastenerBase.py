@@ -162,9 +162,16 @@ def FSGetKey(*args):
   return (key, None)
 
 def MToFloat(m):
-    m = m.lstrip('(');
-    m = m.rstrip(')');
-    return float(m.lstrip('M'))
+    if "M" in m:
+        m = m.lstrip('(');
+        m = m.rstrip(')');
+        return float(m.lstrip('M'))
+    else:
+        # Inch...
+        x = m.split("-")[0]
+        if "/" in x:
+            a, b = map(float, x.split("/"))
+        return (a / b) * 25.4
   
 # sort compare function for m sizes
 def MCompare(x, y):

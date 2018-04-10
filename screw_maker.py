@@ -1550,7 +1550,8 @@ tuningTable={
   '(M52)': (5.00, 508, 508),
   'M56': (5.50, 508, 508),
   '(M60)': (5.50, 508, 508),
-  'M64': (6.00, 489, 489) # Nut ISO4032: 489
+  'M64': (6.00, 489, 489), # Nut ISO4032: 489
+  '5/16-24': (0,0,0),
   } 
 
 
@@ -4831,7 +4832,16 @@ class Screw(object):
   def makeScrewTap(self, ThreadType ='M6',l=25.0):
     dia = self.getDia(ThreadType)
 
-    P, tunIn, tunEx  = tuningTable[ThreadType]
+    metric = self.is_metric(ThreadType)
+
+    if metric:
+      P, tunIn, tunEx  = tuningTable[ThreadType]
+    else:
+      # The pitch is coded in the ThreadType
+      TPI = float(ThreadType.split("-", 1)[1])
+      # This is in TPI, but we need mm...
+      P = 25.4 / TPI
+
 
     residue, turns = math.modf((l)/P)
     turns += 1.0
@@ -5218,12 +5228,33 @@ class Screw(object):
   def setTuner(self, myTuner = 511):
     self.Tuner = myTuner
 
+  def is_metric(self, threadtype):
+    """
+    Return true if the threadtype is metric
+    """
+    return "M" in threadtype
+
   def getDia(self,ThreadType):
-    if '(' in ThreadType:
-      threadString = ThreadType.lstrip('(M')
-      dia = float(threadString.rstrip(')'))
+    if "M" in ThreadType:
+      # Assume metric
+      if '(' in ThreadType:
+        threadString = ThreadType.lstrip('(M')
+        dia = float(threadString.rstrip(')'))
+      else:
+        dia=float(ThreadType.lstrip('M'))
     else:
-      dia=float(ThreadType.lstrip('M'))
+      # Assume this is a inch number...
+      # FIXME: only supports direct size, not # threads!
+      # Thread type is given as "xxx-pp" xxx like 1/4 or 2, pp like TPI
+      d = ThreadType.split("-", 1)[0]
+      if "/" in d:
+        a, b = map(float, d.split("/", 1))
+        d = a / b
+      else:
+        d = float(d)
+
+      # to mm:
+      dia = d * 25.4
     return dia
 
     
